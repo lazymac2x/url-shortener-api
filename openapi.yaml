@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: URL Shortener API
+  description: Self-hosted URL shortener with click tracking and analytics
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4100
+
+paths:
+  /api/v1/shorten:
+    post:
+      summary: Create a shortened URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The URL to shorten
+                alias:
+                  type: string
+                  description: Custom alias for the short code
+                expiresIn:
+                  type: integer
+                  description: Expiration time in seconds
+      responses:
+        '201':
+          description: Short URL created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortenResponse'
+        '400':
+          description: Invalid input
+
+  /api/v1/list:
+    get:
+      summary: List all shortened URLs
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of URLs
+
+  /api/v1/info/{code}:
+    get:
+      summary: Get URL info and click count
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: URL info
+        '404':
+          description: Not found
+
+  /api/v1/stats/{code}:
+    get:
+      summary: Get detailed click analytics
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detailed analytics
+        '404':
+          description: Not found
+
+  /api/v1/{code}:
+    get:
+      summary: Redirect to original URL
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to original URL
+        '404':
+          description: URL not found or expired
+    delete:
+      summary: Delete a shortened URL
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+        '404':
+          description: Not found
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service status
+
+components:
+  schemas:
+    ShortenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            code:
+              type: string
+            originalUrl:
+              type: string
+            shortUrl:
+              type: string
+            qrCode:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            expiresAt:
+              type: string
+              format: date-time
+              nullable: true
+            clickCount:
+              type: integer
